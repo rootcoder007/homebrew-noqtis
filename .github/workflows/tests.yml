@@ -47,6 +47,6 @@ jobs:
           brew tap rootcoder007/noqtis "$GITHUB_WORKSPACE"
           # a Homebrew that asks for it loads a tap's formula once trusted
           brew trust --tap rootcoder007/noqtis 2> /dev/null || true
-          brew install --verbose rootcoder007/noqtis/noqtis
+          brew install --verbose --include-test rootcoder007/noqtis/noqtis
           brew test --verbose rootcoder007/noqtis/noqtis
           brew list --versions noqtis
