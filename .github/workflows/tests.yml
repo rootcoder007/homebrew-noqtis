@@ -1,0 +1,52 @@
+# Installs the formula of this tap on clean macOS and Linux runners and
+# runs its `brew test`: on every change of the formula (a release of noqtis
+# pushes one), once a week, and by hand. Until the first release there is
+# no formula and the job says so.
+name: tests
+
+on:
+  push:
+    branches: [main]
+    paths: ["Formula/**", ".github/workflows/tests.yml"]
+  pull_request:
+    paths: ["Formula/**", ".github/workflows/tests.yml"]
+  schedule:
+    - cron: "23 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  formula:
+    name: noqtis (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-24.04]
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+      HOMEBREW_NO_ENV_HINTS: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: install from the formula, then brew test
+        run: |
+          if [ ! -f Formula/noqtis.rb ]; then
+            echo "::notice::no Formula/noqtis.rb yet: the first release writes it"
+            exit 0
+          fi
+          if [ -x /home/linuxbrew/.linuxbrew/bin/brew ]; then
+            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          fi
+          brew tap rootcoder007/noqtis "$GITHUB_WORKSPACE"
+          # a Homebrew that asks for it loads a tap's formula once trusted
+          brew trust --tap rootcoder007/noqtis 2> /dev/null || true
+          brew install --verbose rootcoder007/noqtis/noqtis
+          brew test --verbose rootcoder007/noqtis/noqtis
+          brew list --versions noqtis
